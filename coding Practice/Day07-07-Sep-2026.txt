@@ -1,0 +1,104 @@
+## Day 07
+
+## Ansible Task - Install Nginx on a server
+
+---
+- name: Install nginx on max-effort server
+  hosts: all
+  become: yes
+
+  tasks:
+   - name: install nginx
+     yum:
+      name: nginx
+      state: present
+
+
+## Terraform Task - Create EC2 (t2.micro)
+
+provider "aws" {
+    region = "ap-south-1"
+}
+
+resource "aws_instance" "max-effort" {
+    ami = "ami-0abcd1234abcd1234"
+    instance_type = "t2.micro"
+
+    tags {
+         Name = "max-effort"
+    }
+}
+
+
+## Kubernetes - Deployment with 2 replicas
+
+apiVersion: v1
+kind: Deployment
+metadata: 
+ name: max-effort-deployment 
+spec:
+ replicas: 2
+ selector: 
+    matchLabels:
+        app: max-effort-app
+  template:
+    metadata:
+        labels:
+            app: max-effort-app 
+    spec:
+        containers:
+        - name: app
+          image: nginx
+          ports:
+           - containers: 80
+           
+
+
+## Shell Scrip - Print Date & Hostname
+ 
+ #!/bin/bash
+ echo "Date: $(date)"
+ echo "Uptime: $(uptime)"
+
+# Parameterized Builds
+## Jenins Pipeline - Parameterized
+
+pipeline {
+    agent any
+    paramaters {
+        string(name: 'Environment', defaultValue: 'dev', description: 'Deployment Environment')
+    }
+    environment {
+        Institue_name = "Pathnex"
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/Pathnex/sample-java-app.git'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh 'echo "Deploying to $Environment by $Institue_name"'
+            }
+        }
+    }
+}
+
+
+## GitLab CI - Parameterized via Variables
+
+stages:
+ - deploy 
+
+variables:
+ Institue_name: "Pathnex"
+ Environment: "dev"
+
+ deploy:
+  stage: deploy
+  image: alpine:latest
+  script:
+   - echo "Deploying to $Environment by $Institue_name"
+
+   
