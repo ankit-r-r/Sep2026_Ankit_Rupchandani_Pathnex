@@ -1,0 +1,147 @@
+# Day 08 - Variables, VPC, Probes, Loops
+
+## Ansible - Install Packages Using Variables
+
+
+---
+- name: Install packages for Max-Effort using variables
+  hosts: all
+  become: yes
+
+
+  vars: 
+   max-effort_packages:
+    - tree
+    - unzip
+    - vim
+
+ tasks:
+  - name: Install required packages
+    yum:
+     name: "{{max-effort_packages}}"
+     state: present
+
+
+
+## Terraform - Create VPC + Subnet
+
+provider "aws" {
+    region = "ap-south-1"
+}
+
+resource "aws_vpc" "maxeffortVPC" {
+    cidr_block = "10.10.0.0/16"
+
+    tags = {
+        Name = "Max-effort-VPC"
+    }
+}
+
+resource "aws_subnet" "maxeffortsubnet" {
+    vpc_id = aws_vpc.maxeffortVPC.id 
+    cidr_block = "10.10.1.0/24"
+    map_public_ip_on_lunch = true
+
+    tags = {
+        Name = "Maxeffort-Subnet"
+    }
+}
+
+
+## Kubernetes - Add Liveness & Readiness Probes
+
+apiVersion: v1
+kind: Pod 
+metadata: 
+ name: maxeffort-probe-pod 
+ spec:
+  containers:
+   - name: web
+     image: nginx
+     livenessProbe:
+      httpGet:
+       path: /
+       port: 80
+      intialDelaySeconds: 5
+     readinessProbe: 
+      httpGet:
+       path: /
+       port: 80
+      intialDelaySeconds: 3
+
+
+
+## Shell Scrips - Loop Through List
+
+#!/bin/bash
+
+for item in Max-Effort DevOps Training; do
+ echo "Item: $item"
+done
+
+
+
+# Conditional Stages
+
+## Jenkins Pipeline - Conditional Execution
+
+pipeline {
+    agent any 
+    parameters {
+        string(name: 'ENVIRONMENT', defaultValue: 'dev', description: 'Deployment Environment')
+    }
+    environment {
+        INSTITUTE_NAME = "Max-Effort"
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Pathnex/sample-java-app.git'
+            }
+        }
+        stage('Build') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh 'mvn clean compile'
+            }
+        }
+        stage('Deploy') {
+            when {
+                expression { params.ENVIRONMENT == 'dev' }
+            }
+            steps {
+                sh 'echo "Deploying to $ENVIRONMENT by $INSTITUTE_NAME"'
+            }
+        }
+    }
+}
+
+
+## GitLab CI - Conditional Jobs
+
+stages: 
+ - build
+ - deploy
+
+build: 
+ stage: build
+ image: maven:3.8.1-jdk-17
+ script:
+  - git clone https://github.com/Pathnex/sample-java-app.git
+  - cd sample-java-app
+  - mvn clean compile
+ only:
+  - main
+
+deploy:
+ stage: deploy
+ image: alpine:latest
+ script:
+  - echo "Deploying to $CI_ENVIRONMENT_NAME by Max-Effort"
+ only:
+  variables:
+   - $CI_ENVIRONMENT_NAME == "dev"
+
+   
