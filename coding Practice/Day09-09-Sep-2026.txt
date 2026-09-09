@@ -1,0 +1,99 @@
+#Day 09 - Templates, Internet Gateway, ConfigMap, CPU Load
+
+
+## Anible - use jinja2 Template
+
+
+---
+- name: Deploy template for Max-effort
+  hosts: all
+  become: yes
+
+  tasks:
+   - name: copy template file
+     template:
+      src: max-effort.conf.j2
+      dest: /etc/max-effort.conf
+
+
+
+## Terraform - Internet Gateway
+
+
+resource "aws_internet_gateway" "MaxeffortIGW" {
+    vpc_id = aws_vpc.maxeffortVPC.vpc_id
+
+    tags = {
+        Name = "MaxEffort-IGW"
+    }
+}
+
+
+## Kubernetes - Create ConfigMap
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+ name: maxeffort-config 
+data:
+ APP_MODE: "production"
+ WELCOME_MSG: "Hello Santosh"
+
+
+
+ ## Shell Script - Check CPU Load
+ 
+ #!/bin/bash
+
+ LOAD=$(uptim | awk '{print $10}')
+
+ echo "Current CPU Load: $LOAD"
+
+
+
+ ## Artifacts and Archiving
+
+
+ ## Jenkins Pipeline - Archive Artifacts
+
+ pipeline {
+    agent any
+    envirnoment {
+        INSTITUTE_NAME = "SANTOSH Consulatancy"
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/Pathnex/sample-java-app.git'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+        stage('Archive') {
+            steps {
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            }
+        }
+    }
+ }
+
+
+ ## GitLab CI - Artifacts 
+
+ stages:
+  - build
+
+  build:
+   stage: build
+   image: maven:3.8.1-jdk-17
+   script:
+    - git clone https://github.com/Pathnex/sample-java-app.git
+    - cd sample-java-app
+    - mvn clean package
+   artifacts:
+    paths:
+     - target/*.jar
+    expire_in: 1 week
