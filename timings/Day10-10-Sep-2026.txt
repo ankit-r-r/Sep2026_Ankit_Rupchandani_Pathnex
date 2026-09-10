@@ -1,0 +1,33 @@
+
+------------------------------------------------
+
+## Today's tasks completed
+
+# Attended live session & prepared for evening session
+# Attended evening session
+# Completed all 4 tasks.
+# Did git push and completed the coding practice task.
+# Sent Intro Video to said channel
+# A bit Low on confidence and got comments to imporve on hand movenment from Haseeb Akbar in Evening session.
+# Practice with ChatGPT Voice feature and improved a bit in technical and english.
+# Completed almost all topics in docker - like dockerfile, docker compose, docker swarm, docker network, ADD vs CMD, ARG vs ENV, CMD vs ENTRYPOINT, VOlumes, Multi-stage build. Docker Prune.
+
+------------------------------------------------
+
+## Things Regreted doing today
+
+# Used social medium more than yesterday
+# could not dedicate the proper time to study.
+
+------------------------------------------------
+
+
+## Tomorrows Task's
+
+# Complete all the four task
+# Attend live session
+# Coding practice
+# Attend Confidence building session
+# Practice on english and technical words and bring fluency for interviews.
+# self record the evening session and imporve on it.
+
