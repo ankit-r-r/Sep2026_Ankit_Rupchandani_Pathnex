@@ -1,0 +1,160 @@
+# Day-10 - Advanced Kubernetes, Jenkins and GitLab CI
+## Ansible - Create Docker Containcer for Multiple Applications
+
+
+---
+- name: Setup Docker containers for Multiple Apps
+  hosts: all
+  become: yes
+  tasks: 
+   - name: Pull Web app image
+     docker_image:
+      name: max-effort-app
+      source: pull
+
+   - name: Pull Database app image
+     docker_image:
+      name: max-effort-DB-app
+      source: pull
+
+   - name: Run Web app Container
+     docker_container: 
+      name: max-effort
+      image: max-effort-app
+      state: started
+      published_ports:
+       - "8080:80"
+
+   - name: Run Database app container
+     docker_container:
+      name: database-app
+      image: my-database-app
+      state: started
+      published_ports:
+       - "3306:3306"
+
+ ====================================================
+
+ ## Terraform - VPC with private and public subnets
+
+ resource "aws_vpc" "public" {
+  cidr_block = "10.0.0.0/16"
+ }
+
+ resource "aws_subnet" "private" {
+  vpc_id = aws_vpc.main.vpc_id
+  cidr_block = "10.0.2.0/24"
+  availability_zone = "us-east-1b"
+ }
+
+ ====================================================
+
+## Kubernetes - Deploying Statefulset
+
+apiVersion: apps/v1
+kind: Statefulset
+metadata:
+ name: max-effport-db
+spec:
+ serviceName: "max-effort-db"
+ replicas: 3
+ selector:
+  matchLabels:
+   app: max-effort-db 
+ templates:
+  metadata:
+   labels:
+    app: max-effort-db
+  spec:
+   containers:
+    - name: db
+      image: mysql:5.7
+      volumeMounts:
+       - mountPath: /var/lib/mysql
+         name: mysql-storage
+volumeClaimTemplates:
+ - metadata:
+    name: mysql-storage
+   spec:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+     requests:
+      storage: 1Gi
+
+ ====================================================
+
+## Jenkinsfile - Build and Deploy to Kubernetes
+
+pipeline {
+  agent any
+  environment {
+    IMAGE_NAME = 'max-effort-web-app'
+  }
+  stages {
+    stage('Build docker image') {
+      steps {
+        script {
+          docker.build("${env.IMAGE_NAME}")
+        }
+      }
+    }
+    stage ('Push Docker Image') {
+      steps {
+        script {
+          docker.withRegistry('https://docker.io', 'docker-credentials') {
+            docker.image("${env.IMAGE_NAME}").push('latest)
+          }
+        }
+      }
+    }
+    stage('Deploy to Kubernetes') {
+      steps {
+        script {
+          sh 'kubectl apply -f deployment.yaml'
+        }
+      }
+    }
+  }
+}
+
+
+ ====================================================
+
+## GitLab CI/CD - Build, Push and Deploy
+
+stages:
+ - build
+ - push
+ - deploy
+
+build: 
+ stage: build
+ script:
+  - docker build -t max-effort-web-app .
+
+push: 
+ stage: push
+ script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+  - docker push max-effort-web-app
+
+deploy:
+ stage: deploy
+ script: 
+  - kubectl apply -f kubernetes/deployment.yaml
+
+
+
+   ====================================================
+
+
+Docker
+# Workign Directory & COPY
+
+FROM ubuntu:22.04
+WORKDIR /opt/max-effort/devops-project
+COPY . /opt/max-effort/devops-project
+CMD ["ls", "-l", "/opt/max-effort.devops-project"]
+
+#Real Path 
+/opt/max-effort/devops-project
