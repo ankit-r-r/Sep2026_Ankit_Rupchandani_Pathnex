@@ -1,0 +1,115 @@
+Day-14 Ansible Setup Nginx with Reverse Proxy
+
+Ansible - Setup 
+
+---yaml
+ - name: Setup Nginx with Reverse Proxy
+   hosts: all
+   become: yes
+   tasks:
+    - name: Install nginx
+      yum: 
+       name: nginx
+       state: present
+    - name: Configure nginx as reverse proxy
+      template: 
+       src: reverse-proxy.conf.j2
+       dest: /etc/nginx/conf.d/reverse-proxy.conf
+    - name: Restart nginx service
+      service: 
+       name: nginx
+       state: restarted
+       enabled: yes
+
+
+Terraform - Create S3 bucket with versioning and Logging
+
+resource "aws_s3_bucket" "prod_bucket" {
+    bucket = "prod-bucket"
+    versioning {
+        enabled = true
+    }
+
+    logging {
+        target_bucket = "prod-log-bucket"
+        target_prefix = "logs/"
+    }
+}
+
+Kubernetes - Ingress with nginx controller
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: 
+ name: prod-ingress
+ annotation:
+  nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+ rules:
+  - host: pathnex.local
+    http:
+     paths:
+      - path: /
+        pathType: prefix
+        backend:
+         service:
+          name: prod-serice
+          port:
+           number: 80
+
+Jenkinsfile - Build, Test and Deploy with stages
+
+pipeline {
+    agent any
+     stage {
+        stage('Build') {
+            steps {
+                echo 'Building docker image..'
+                docker.build('prod-web-app')
+            }
+        }
+        stage('test) {
+            steps {
+                echo 'Running status..'
+            }
+        }
+        stage('Deploy to K8s') {
+            steps {
+                script {
+                    sh 'kubectl apply -f kubernetes/deployment.yaml'
+                }
+            }
+        }
+     }
+}
+
+GitLab CI/CD - Multi Stage Deployment with Helm
+
+stages: 
+ - build
+ - push
+ - deploy
+
+build:
+ stage: build
+ script:
+ - docker build -t prod-web-app .
+
+push:
+ stage: push
+ script:
+  - docker login -u "$CI_REGISRTY_USER" -p "$CI_REGISTRY_PASSWORD"
+  - docker push prod-web-app
+
+deploy:
+ stage: deploy
+ script:
+  - helm upgrade --install prod-nginx prod/nginx-ingress
+
+
+docker
+#CMD vs ENTRYPOINT
+
+FROM ubuntu
+ENTRYPOINT ["echo"]
+CMD ["Hello Santosh"]
+
