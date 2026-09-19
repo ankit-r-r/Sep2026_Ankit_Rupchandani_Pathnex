@@ -1,0 +1,150 @@
+Day -17 Multi Cloud Deployments, Auto-healing and Advanced CI/Cloud
+
+Ansible - Auto-Healing Web Servers with Systemd
+
+---
+- name: Configure Auto-healing for Web Servers
+  hosts: all
+  become: yes
+  tasks:
+   - name: Ensure nginx service is running
+     service:
+      name:
+      state: started
+      enables: yes
+   - name: Setup auto-restart for nginx service
+     lineinfile:
+      path: /etc/systemd/system/nginx.service.d/override.conf 
+      line: "Restart=always"
+      create: yes
+   - name: Reload systemd
+     command: systemctl daemon-Reload
+
+
+Terraform - Multi Cloud Infra
+
+#AWS VPC
+resource "aws_vpc" "main" {
+    cidr_block = "10.0.0.0/16"
+}
+
+# Azure Vnet
+resource "azurerm_virtual_network" "main" {
+    name = "prod-vnet"
+    location = "East US"
+    address_space = ["10.0.0.0/16"]
+    resource_group_name = azurerm_resource_group.main.name
+}
+
+# EC2 instance in AWS
+resoure "aws_instance" "dev_ec2" {
+    ami = "ami-0esff0224rewf0433"
+    instance_type = "t3.micro"
+    region = "ap-south-2"
+}
+
+#Virtual Machine in Azure
+resoure "azurerm_linux_virtual_machine" "dev_vm" {
+    name = "dev-azure-vm"
+    resource_group_name = azurerm_resource_group.main.name
+    location = azurerm_resource_group.main.location
+    size = "Standard_B1s"
+    admin_username = "azureuser"
+    admin_password = "P@ssword123!"
+}
+
+K8s - self healing with liveness and readiness probes
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: dev-web-apps
+spec:
+ replicas: 3
+ selector:
+  matchLabels:
+   labels:
+    app: dev-web-app
+ template:
+  metadata:
+   labels:
+    app: dev-web-app
+  spec:
+   containers:
+    - name: nginx
+      image: nginx
+      ports:
+       - containerPort: 80
+      livenessProbe:
+       httpGet:
+        path: /healthz
+        port: 80
+       initialDelaySeconds: 5
+       periodSeconds: 10
+      readinessProbe:
+       httpGet:
+        path: /healthz
+        port: 80
+      initialDelaySeconds: 5
+      periodSeconds: 10
+
+
+Jenkindfile - Rolling Deployments with K8s
+pipeline {
+    agent any
+    environment {
+        IMAGE_NAME = 'dev-web-app'
+    }
+    stages {
+        stage('build') {
+            steps {
+                echo 'Building Docker Image..'
+                docker.build("${env.IMAGE_NAME}")
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Running tests..'
+            }
+        }
+        stage('Deploy to k8s') {
+            steps {
+                script {
+                    sh 'kubectl apply -f k8s/deployment.yaml
+                    sh 'kubectl apply status deploymeny/dev-web-app'
+                }
+            }
+        }
+    }
+}
+
+GitLab CI/CD - Multi-Cloud Deployment
+stages:
+ - build
+ - push
+ - deploy
+
+build:
+ stage:  build
+ script: 
+  - docker build -t dev-web-app .
+
+push:
+ stage: push
+ script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+  - docker push dev-web-app
+
+deploy_aws:
+ stage: deploy
+ script:
+  - kubectl --context=azure-cluster apply -f k8s/deployment.yaml
+
+Docker 
+docker run -d \
+--name dev-mysql \
+-e MYSQL_ROOT_PASSWORD=root \
+mysql:8
+
+#Real path
+/var/lib/mysql
