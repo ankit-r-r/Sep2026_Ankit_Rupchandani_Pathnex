@@ -1,0 +1,133 @@
+Day-19 Advanced monitoring, logging and security
+
+Ansible - Setup prometheus for monitoring
+- name: Install prometheus for monitoring
+  hosts: all
+  become: yes
+  tasks:
+   - name: install Prometheus dependencies
+     yum: 
+      name:
+       - prometheus
+       - prometheus-node-exporter
+     state: present
+   - name: Start prometheus service
+     service:
+      name: prometheus
+      state: started
+      enabled: yes
+
+Terraform - setup AWS cloudwatch for monitoring
+resource "aws_cloudwatch_log_group" "CW_group" {
+    name = "prod-log-group"
+}
+resource "aws_cloudwatch_log_stream" "CW_stream" {
+    name = "prod-log-stream"
+}
+
+
+K8s - deploy fluentd for logging
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: fluentd
+spec:
+ replicas: 1
+ selector:
+  matchLables:
+   app: fluentd-prod
+ template:
+  metadata:
+   labels:
+    app: fluentd-prod
+ spec:
+  containers:
+   - name: fluentd
+     image: fluent/fluentd
+     ports:
+      - containerPort: 24224
+
+---
+apiVersion: v1
+kind: Service 
+metadata:
+ name: fluentd
+spec:
+ selector: 
+  app: fluentd-prod
+ ports:
+  - protocol: TCP
+    port: 24224
+
+JenkinsFile - Integrating prometheus monitoring in pipeline
+
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building docker image...'
+                docker.build('pathnex-web-app')
+            }
+        }
+        stage('test') {
+            steps {
+                echo 'Running tests...'
+            }
+        }
+        stage('Monitor Deployment') {
+            steps {
+                script {
+                    sh 'kubectl apply -f kubernetes/deployment.yaml
+                    sh 'kubectl get pods -w'
+                }
+            }
+        }
+    }
+}
+
+GitLab CI/CD - prometheusa and loggin g intergration
+stages:
+ - build
+ - push
+ - deploy
+
+build:
+ stage: build
+ script:
+  - docker build -t prod-web-app .
+
+push:
+ stage: push
+ script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+  - docker push prod-web-app
+
+deploy:
+ stage: deploy
+ script:
+  - kubectl apply -f kubernetes/deployment.yaml
+  - kubectl get pods -w
+
+
+docker
+#Flask application
+FROM flask import Flask
+app = Flask(__name__)
+@app.route('/')
+def home():
+  return "Hello Santosh"
+app.run(host='0.0.0.0', port=5000)
+
+
+DockerFile
+
+FROM python:3.16
+WORKDIR /opt/pathnex/flask-app
+COPY . /opt/pathnex/flask-app/
+RUN pip install flask
+CMD ["python", "/opt/pathnex/flask-app/flask.py"]
+
+
+
