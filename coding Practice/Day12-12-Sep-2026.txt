@@ -1,0 +1,133 @@
+Day - 12 - Scaling applications and automation.
+
+Ansible - setup Auto-scaling Group(ASG)
+
+- name: Setup Auto Scaling Group
+  hosts: all
+  become: yes
+  tasks:
+   - name: Create Launch Configuration
+     ec2_asg:
+      name: max-effort-asg
+      region: ap-south-2
+      launch_config_name: max-effort-launch-config
+      min_size: 1
+      max_size: 3
+      desired_capacity: 2
+      vpc_zone_identifier: subnet-23435945
+
+
+====================================================
+
+Terraform - Create a Load Balancer with EC2 Instances
+
+resource "aws_lb" "LB" {
+ name = "max-effort-lb"
+ internal = false
+ load_balancer_type = "application"
+ security_groups = [aws_security_group.allow_ssh_http.id]
+ subnets = [aws_subnet.public.id]
+
+}
+
+resource "aws_instance" "pathnex_ec2" {
+
+ ami = "ami-0sfnj13123nnkn2322"
+ instance_type = "t3.small"
+ security_groups = [aws_security_group.allo_ssh_http.name]
+ tags = {
+  Name = "LB-ec2"
+ }
+}
+
+
+Kubernetes - Horizontal Pod Autoscaler(HPA) with Load Balancer
+
+apiVersion: app/v1
+kind: Deployment
+metadata: 
+ name: max-effort-app
+spec:
+ replicas: 2
+ selector:
+  matchLabels:
+   app: max-app
+ template:
+  metadata:
+   labels:
+    app: max-app
+  spec: 
+   containers:
+   - name: web
+     image: nginx
+     ports:
+      - containerPort: 80
+---
+apiVersionL autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+ name: max-app-hpa
+spec:
+ scaleTragetRef:
+  apiVersion: app/v1
+  kind: Deployment
+  name: max-effort-app
+ minReplicas: 1
+ maxReplicas: 5
+ targetCPUUtilizationPercentage: 80
+
+Jenkinsfile - Implement Parallel Stages
+
+pipeline {
+  agent any
+  stages {
+   stage('Build & Test') {
+    parallel {
+     stage('Build') {
+      steps {
+       echo 'Building Project...'
+      }
+     }
+     stage('Test') {
+      steps {
+       echo 'Running tests...'
+      }
+     }
+    }
+   }
+   stage('Deploy') {
+    steps {
+     echo 'Deploying project...'
+    }
+   }
+  }
+}
+
+
+GitLab CI-CD - Parallel Jobs for Build and Test
+stages:
+ - build
+ - test
+ - deploy
+
+build:
+ stage: build 
+ script: 
+  - docker build -t max-effort-app .
+
+test:
+ stage: test
+ script:
+  - docker apply -f kubernetes/deployment.yaml
+
+Docker
+FROM ubuntu
+VOLUME ["/opt/max-effort/data"]
+CMD ["sleep","1000"]
+
+#Real path
+/opt/max-effort/data
+
+#Bash Command 
+docker volume create max-effort-volume
+
