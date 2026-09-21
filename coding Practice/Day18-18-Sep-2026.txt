@@ -1,0 +1,140 @@
+Day -18 - High Availability, Multi-Region and auto-scaling
+
+Ansible
+
+```yaml
+- name: setup HAProxy load balancer
+  hosts: all 
+  become: yes
+  tasks:
+   - name: Install HAProxy
+     yum: 
+      name: haproxy 
+      state: present
+   - name: Configure HAProxy
+     template:
+      src: haproxy.cfg.j2
+      dest: /etc/haproxy/haproxy.cfg
+   - name: start HAProxy service
+     service:
+      name: haproxy
+      state: started
+      enabled: yes
+
+Terraform - Multi-region Auto-scalling Group with Ansible
+resource "aws_lb" "dev_lb" {
+    name = "dev-lb"
+    internal = false
+    load_balancer_type = "application"
+    security_groups = [aws_security_group.allow.ssh.http.id]
+    subnets = [aws.subnet.public.id, aws.subnet.public2.id]
+}
+
+resource "aws_autoscaling_group" "dev_asg" {
+    desired_capacity = 3
+    max_size = 5
+    min_size = 2
+    vpc_zone_identifier = [aws_subnet.public.id, aws_subnet.public2.id]
+    launch_configuration = aws_launch_configuration.dec_config.id
+}
+
+K8s - HPA with Multiple Replicas
+
+apiVersion: apps/v1
+kind:Deployment
+metadata:
+ name: prod-web-app 
+spec: 
+ replicas: 3
+  selector:
+   matchLabels:
+    app: prod-app
+  template:
+   metadata:
+    labels:
+     app: prod-app
+   spec: 
+    containers: 
+     - name: nginx
+       image: nginx
+       ports:
+        - catainerPort: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: 
+ name: prod-web-app-hpa 
+spec:
+ scaleTsrgetRef:
+  apiVersion: apps/v1
+  kind: Deployment
+  name: prod-app
+ minReplicas: 2
+ maxReplicas: 10
+ targetCPUUtilizationPercentage: 80
+
+
+JenkinsFile - Blue-green Deployment
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building Docker image...'
+                docker.build('prod-web-app)
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Running Tests...'
+            }
+        }
+        stage('Blue-Green Deployment') {
+            steps {
+                script {
+                    sh 'kubectl apply -f kubernetes/blue-deployment.yaml'
+                    sh 'kubectl apply -f kubernetes/green-deployment.yaml'   
+                    sh 'kubectl rollout status deployment/blue-deployment'
+                    sh 'kubectl rollout status deployment/gree-deployment'
+                }
+            }
+        }
+    }
+}
+
+GitLab CI/CD
+
+stages:
+ - build
+ - push
+ - deploy 
+
+build:
+ stage: build
+ script:
+  - docker build -t prod-web-app .
+
+push:
+ stage: push
+ script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+  - docker push prod-web-app
+
+
+deploy:
+ stage: deploy
+ script:
+  - kubectl apply -f kubernetes/blue-deployment.yaml
+  - kubectl apply -f kubernetes/green-deployment.yaml
+  - kubectl rollout status deployment/blue-deployment
+  - kubectl rollout status deployment/green-deployment
+
+
+
+Docker
+#redis Container
+docker run -d --name prod-redis redis
+
+#real path
+/data 
