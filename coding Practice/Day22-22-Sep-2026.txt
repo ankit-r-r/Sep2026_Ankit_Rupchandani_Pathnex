@@ -1,0 +1,122 @@
+Day 22 - Multi-Cluster kubernetes Management
+
+Ansible - deploy Nginx across multiple kubernetes Cluster
+- name: Deploy nginx across multiple kubernetes clusters
+  hosts: localhost
+  tasks:
+   - name: Configure kubectl for cluster 1
+     command: kubectl --context=us-east config use-context us-east-cluster
+   - name: Deploy nginx on Cluster 1
+     command: kubectl apply -f kubernetes/deployment.yaml
+   - name: Configure kubectl for Cluster 2
+     command: kubectl --context=us-west config use-context us-west-cluster
+   - name: Deployt Nginx on Cluster 2
+     command: kubectl apply -f kubernetes/deployment.yaml
+
+Terraform - Multi-Region kubernetes cluster with EKS and GKE
+
+resource "aws_eks_cluster" "prod_eks" {
+    name = "prod-eks-cluster"
+    role_arn = aws_iam_role.eks_cluster_role.arn
+
+    vpc_config {
+        subnet_ids = [aws_subnet.prod_subnet.id]
+    }
+
+    depends_on = [aws_iam_role_policy_attachment.eks_cluster_role_policy]
+}
+
+resource "google_container_cluster" "dev_gke" {
+    name = "dev-gke-cluster"
+    location = "us-central1-a"
+    initial_node_count = 3
+    node_config {
+        machine_type = "n1-standard-1"
+    }
+}
+
+kubernetes - Federated deployment with multiple cluster
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+ name: prod-deployment
+spec:
+ replicas: 3
+ selector:
+  matchLabels:
+   app: prod-web-app
+ template:
+  metadata:
+   labels:
+    app: prod-web-app 
+  spec:
+   containers:
+    - name: nginx
+      image: nginx
+      ports:
+       - containePort: 80
+---
+apiVersion: federation.k8s.io/v1beta1
+kind: FederatedDeployment
+metadata:
+ name: prod-federated-deployment
+ namespace: default
+spec:
+ template:
+  spec:
+   replicas: 4
+    selector:
+     matchLabels:
+      app: prod-web-app
+    template:
+     metadata:
+      labels:
+       app: prod-web-app
+     spec:
+      containers:
+       - name: nginx
+         image: nginx
+         ports:
+          - containerPort: 80
+
+JenkinsFile - Multi-cluster Deployment Strategy
+pipeline {
+    agent any 
+    stages {
+        stage('Deploy to Cluster') {
+            steps {
+                script {
+                    sh 'kubectl --context=us-east-cluster apply -f kubernetes/deployment.yaml'
+                }
+            }
+        }
+    }
+}
+
+GitLab Ci/CD - Multi-cluster Deployment Strategy
+stages:
+ - deploy
+
+deploy_cluster_1:
+ stage: deploy
+ script:
+  - kubectl --context=us-east-cluster apply -f kubernetes/deployment.yaml
+
+deploy_cluster_2:
+ stage: deploy
+ script:
+  -kubectl --context=us-west-cluster apply -f kubernetes/deployment.yaml
+
+
+  Docker
+
+  version: '3'
+  services:
+   db:
+    image: mysql:8
+    container_name: santosh-db
+    environment:
+     MYSQL_ROOT_PASSWORD: root 
+   web:
+    image: nginx
+    container_name: santosh-web
