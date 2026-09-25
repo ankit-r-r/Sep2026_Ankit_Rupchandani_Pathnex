@@ -1,0 +1,116 @@
+Day -24 ADvanced Terraform Modules and CI/CD Pipeline Scaling
+
+Ansible - Deploy Docker Containers with Kubenetes Using Helm
+
+---yaml
+- name: Deploy Docker Containers with Helm
+  hosts: localhost
+  tasks:
+   - name: Install Helm
+     command: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+   - name: Deploy microservices with Helm
+     command: helm install debian-app ./microservice-chart
+    
+Terraform - Multi module Infrastructure with Outputs
+
+module "deb_vpc" {
+  source = "./vpc"
+}
+
+module "deb_instance" {
+  source = "./instance"
+  vpc_id = module.deb_vpc.vpc_id
+}
+
+output "instance_id" {
+  value = module.deb_instance.instance_id
+}
+
+K8s - Helm-based Auto-scaling Deployments
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: pathnex-web-app
+spec:
+ replicas: 3
+ selector:
+  matchLabels:
+   app: pathnex-web-app
+ template:
+  metadata:
+   labels:
+    app: pathnex-web-app
+  spec:
+   containers:
+    - name: nginx
+      image: nginx
+      ports:
+       - containerPort: 80
+---
+apiVersion: authscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+ name: pathnex-web-app-hpa
+spec:
+ scaleTargetRef:
+  apiVersion: apps/v1
+  kind: Deployment
+  name: pathnex-web-app
+ minReplicas: 2
+ maxReplicas: 10
+ targetCPUUtilizationPercentage: 80
+
+JenkinsFile - Scaling CI/CD Pipeline
+pipeline {
+  agent any
+  stages {
+    stage('Scale up') {
+      steps {
+        echo 'Scaling up Jenkins pipeline agents for heavy workloads...'
+        // Simulating scaling logic
+      }
+    }
+    stage('Build') {
+      steps {
+        echo 'Building project...'
+      }
+    }
+    stage('Deploy') {
+      steps {
+        echo 'Deploying project...'
+      }
+    }
+  }
+}
+
+GitLab 
+
+stages
+ - scale_up
+ - build 
+ - deploy 
+
+
+scale_up:
+ stage: scale_up
+ script: 
+  - echo "Scaling up GitLab CI/CD runners for heavy worklaods.."
+  # Simulating scaling logic
+
+build:
+ stage: build
+ script:
+  - echo "Building project..."
+
+deploy:
+ stage: deploy
+ script:
+  - echo "Deploying project..."
+
+
+
+
+Docker
+
+FROM nginx
+HEALTHCHECK CMD curl --fail http://localhost || exit 1
