@@ -1,0 +1,91 @@
+Day-29 Final Project Setup and Configuration
+
+Ansible - Complete Deployment Setup
+
+```yaml
+- name: Complete Deployment Setup
+  hosts: all
+  become: yes
+  tasks:
+   - name: Deploy Nginx, MySQL, and Redis with Docker
+     command: docker-compose -f /path/to/docker-compose.yml up -docker
+
+
+Terraform - Provisioning Multi-Tier Application with VPC and Security
+resource "aws_vpc" "pathnex_vpc" {
+  cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_instance" "pathnex_app" {
+  ami = "ami-0asfjk14q24q3n4j234"
+  instance_type = "t2.medium"
+  subnet_id = aws_subnet.pathnex_subnet.subnet_id
+  security_groups = [aws_security_group.pathnex_sg.name]
+}
+
+K8s - Deploy full application Stack
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: pathnex-app 
+spec:
+ replicas: 2
+ selector:
+  matchLabels:
+   app: pathnex-app 
+ template:
+  metadata:
+   labels:
+    app: pathnex-app 
+  spec:
+   containers:
+    - name: nginx
+      image: nginx
+      ports:
+       - containers: 80
+
+---
+apiVersion: v1
+kind: service
+metadata:
+ name: pathnex-service
+spec:
+ selector:
+  app: pathnec-app 
+ ports:
+  - port: 80
+    targetPort: 80
+
+Docker
+FROM nginx
+RUN useradd pathnexuser
+USER pathnexuser
+
+#Commands
+docker container prine
+docker image prune
+docker volume prune
+docker network prune
+docker system prune -a 
+
+
+# Final Docker Project
+version: '3'
+services:
+ frontend:
+  image: nginx
+  container_name: pathnex-frontend
+  ports:
+   - "80:80"
+ backend:
+  build: ./backend
+  container_name: pathnex-backend
+  ports:
+   - "5000:5000"
+ database:
+  image: mqsql:8
+  container_name: pathnex-mysql
+  environment:
+   MYSQL_ROOT_PASSWORD: root
+
+   
